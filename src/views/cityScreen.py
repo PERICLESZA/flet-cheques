@@ -6,59 +6,98 @@ from models.city import City
 def cityScreen(page: ft.Page):
     page.title = "Cadastro de Cidades"
 
-    status_text = ft.Text("", size=14, weight=ft.FontWeight.BOLD)
-
-    idcity_field = ft.TextField(
-        label="ID da Cidade", border_radius=10, bgcolor=ft.Colors.GREY_100)
-    name_city_field = ft.TextField(
-        label="Nome da Cidade", border_radius=10, bgcolor=ft.Colors.GREY_100)
-
     controller = CityController()
 
-    def save_city(e):
-        city = City(idcity_field.value, name_city_field.value)
-        if controller.create_city(city):
-            status_text.value = "✅ Cidade cadastrada com sucesso!"
-            status_text.color = ft.Colors.GREEN
+    # 🔍 Campo de busca dinâmica
+    search_field = ft.TextField(
+        label="Buscar cidade...",
+        on_change=lambda e: filter_cities(e.control.value),
+        border_radius=10,
+        bgcolor=ft.Colors.GREY_100,
+        prefix_icon=ft.icons.SEARCH
+    )
+
+    # 📋 Lista de cidades (Tabela dinâmica)
+    city_table = ft.DataTable(
+        columns=[
+            ft.DataColumn(ft.Text("ID")),
+            ft.DataColumn(ft.Text("Nome")),
+            ft.DataColumn(ft.Text("Ações")),
+        ],
+        rows=[]
+    )
+
+    def save_city(city_id, text_field):
+        new_name = text_field.value.strip()
+        if not new_name:
+            show_snackbar("❌ O nome da cidade não pode estar vazio!", False)
+            return
+
+        city = City(city_id, new_name)
+        success = controller.update_city(city)
+
+        if success:
+            show_snackbar("✅ Cidade salva com sucesso!", True)
+            update_city_list()
         else:
-            status_text.value = "❌ Erro ao cadastrar a cidade!"
-            status_text.color = ft.Colors.RED
-        status_text.update()
+            show_snackbar("❌ Erro ao salvar a cidade!", False)
 
-    save_button = ft.ElevatedButton(
-        "Salvar",
-        on_click=save_city,
-        style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE_700,
-                             color=ft.Colors.WHITE),
-    )
+    def update_city_list():
+        cities = controller.get_all_cities()
+        city_table.rows = []
+        for city in cities:
+            text_field = ft.TextField(value=city.name_city, on_submit=lambda e,
+                                      idcity=city.idcity, field=city.name_city: save_city(idcity, e.control))
+            city_table.rows.append(
+                ft.DataRow(
+                    cells=[
+                        ft.DataCell(ft.Text(str(city.idcity))),
+                        ft.DataCell(text_field),
+                        ft.DataCell(
+                            ft.Row([
+                                ft.IconButton(
+                                    icon=ft.icons.SAVE,
+                                    on_click=lambda e, idcity=city.idcity, field=text_field: save_city(
+                                        idcity, field)
+                                ),
+                                ft.IconButton(
+                                    icon=ft.icons.DELETE,
+                                    on_click=lambda e, idcity=city.idcity: delete_city(
+                                        idcity)
+                                ),
+                            ])
+                        ),
+                    ]
+                )
+            )
+        city_table.update()
 
-    container = ft.Container(
-        content=ft.Column(
-            [
-                ft.Text("Cadastro de Cidade", size=24,
-                        weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700),
-                idcity_field, name_city_field,
-                ft.Container(save_button, alignment=ft.alignment.center),
-                status_text,
-            ],
-            alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        ),
-        width=300,
-        height=400,
-        padding=20,
-        border_radius=15,
-        bgcolor=ft.Colors.WHITE,
-        shadow=ft.BoxShadow(blur_radius=10, spread_radius=2,
-                            color=ft.Colors.GREY_300),
-    )
+    def filter_cities(query):
+        update_city_list()
+        city_table.rows = [
+            row for row in city_table.rows
+            if query.lower() in row.cells[1].content.value.lower()
+        ]
+        page.update()
 
-    return ft.Container(  # Retorna o container para ser usado em `content_container`
-        content=container,
-        alignment=ft.alignment.center,  # Centraliza corretamente
-        expand=True,
-        bgcolor=ft.Colors.BLUE_50,
-    )
+    def show_snackbar(msg, success):
+        page.snack_bar = ft.SnackBar(
+            ft.Text(msg), bgcolor=ft.Colors.GREEN if success else ft.Colors.RED)
+        page.snack_bar.open = True
+        page.update()
 
+    def delete_city(idcity):
+        success = controller.delete_city(idcity)  # Remove do banco de dados
+        if success:
+            show_snackbar("✅ Cidade excluída com sucesso!", True)
+            update_city_list()  # Atualiza a lista de cidades
+        else:
+            show_snackbar("❌ Erro ao excluir a cidade!", False)
 
-# ft.app(target=city_screen)
+    # 🏗️ Layout principal
+    return ft.Column([
+        search_field,
+        ft.ElevatedButton(
+            "Nova Cidade", on_click=lambda _: open_modal(), icon=ft.icons.ADD),
+        city_table
+    ], spacing=20)
