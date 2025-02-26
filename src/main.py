@@ -14,9 +14,9 @@ def main(page: ft.Page):
 
     status_text = ft.Text("", size=14, weight=ft.FontWeight.BOLD)
 
-    email_field = ft.TextField(label="E-mail", border_radius=10, bgcolor=ft.Colors.GREY_100,
+    email_field = ft.TextField(label="E-mail", border_radius=10, bgcolor=ft.Colors.GREY_100, color=ft.Colors.BLACK,
                                value="pep@gmail.com")
-    password_field = ft.TextField(label="Senha", password=True, can_reveal_password=True, border_radius=10, bgcolor=ft.Colors.GREY_100,
+    password_field = ft.TextField(label="Senha", password=True, can_reveal_password=True, border_radius=10, bgcolor=ft.Colors.GREY_100, color=ft.Colors.BLACK,
                                   value="123456")
 
     def login_click(e):

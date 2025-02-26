@@ -11,9 +11,9 @@ def cityScreen(page: ft.Page):
 
     city_table = ft.DataTable(
         columns=[
-            ft.DataColumn(ft.Text("ID"), numeric=True),
-            ft.DataColumn(ft.Text("Nome")),
-            ft.DataColumn(ft.Text("Ações")),
+            ft.DataColumn(ft.Text("ID", color=ft.Colors.BLACK, weight=ft.FontWeight.BOLD), numeric=True),
+            ft.DataColumn(ft.Text("Nome", color=ft.Colors.BLACK, weight=ft.FontWeight.BOLD)),
+            ft.DataColumn(ft.Text("Ações", color=ft.Colors.BLACK, weight=ft.FontWeight.BOLD)),
         ],
         rows=[]
     )
@@ -165,8 +165,8 @@ def cityScreen(page: ft.Page):
         city_table.rows = [
             ft.DataRow(
                 cells=[
-                    ft.DataCell(ft.Text(str(city.idcity))),
-                    ft.DataCell(ft.Text(city.name_city)),
+                    ft.DataCell(ft.Text(str(city.idcity), color=ft.Colors.BLACK)),
+                    ft.DataCell(ft.Text(city.name_city, color=ft.Colors.BLACK)),
                     ft.DataCell(ft.Row([
                         ft.IconButton(
                             ft.icons.EDIT, on_click=lambda e, c=city: open_modal(c)),
