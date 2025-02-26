@@ -52,7 +52,7 @@ def main(page: ft.Page):
         width=300,
         height=400,
         padding=20,
-        border_radius=15,
+        border_radius=5,
         bgcolor=ft.Colors.WHITE,
         shadow=ft.BoxShadow(blur_radius=10, spread_radius=2, color=ft.Colors.GREY_300),
     )

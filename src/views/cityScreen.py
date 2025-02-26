@@ -7,97 +7,191 @@ def cityScreen(page: ft.Page):
     page.title = "Cadastro de Cidades"
 
     controller = CityController()
+    selected_city = None
 
-    # 🔍 Campo de busca dinâmica
-    search_field = ft.TextField(
-        label="Buscar cidade...",
-        on_change=lambda e: filter_cities(e.control.value),
-        border_radius=10,
-        bgcolor=ft.Colors.GREY_100,
-        prefix_icon=ft.icons.SEARCH
-    )
-
-    # 📋 Lista de cidades (Tabela dinâmica)
     city_table = ft.DataTable(
         columns=[
-            ft.DataColumn(ft.Text("ID")),
+            ft.DataColumn(ft.Text("ID"), numeric=True),
             ft.DataColumn(ft.Text("Nome")),
             ft.DataColumn(ft.Text("Ações")),
         ],
         rows=[]
     )
 
-    def save_city(city_id, text_field):
-        new_name = text_field.value.strip()
-        if not new_name:
-            show_snackbar("❌ O nome da cidade não pode estar vazio!", False)
-            return
+    def filter_cities(query):
+        update_city_list()
+        city_table.rows = [row for row in city_table.rows if query.lower(
+        ) in row.cells[1].content.value.lower()]
+        page.update()
 
-        city = City(city_id, new_name)
-        success = controller.update_city(city)
+    search_field = ft.TextField(
+        label="Buscar cidade...",
+        on_change=lambda e: filter_cities(e.control.value),
+        border_radius=10,
+        bgcolor=ft.Colors.GREY_100,
+        prefix_icon=ft.icons.SEARCH,
+        text_align=ft.TextAlign.LEFT,
+    )
+
+    idcity_field = ft.TextField(label="ID da Cidade", disabled=True)
+    name_city_field = ft.TextField(
+        label="Nome da Cidade", on_change=lambda e: check_changes()
+    )
+
+    original_name = ""
+    save_button = ft.ElevatedButton(
+        "Salvar",
+        on_click=lambda e: save_city(),
+        style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE_700,
+                             color=ft.Colors.WHITE),
+        disabled=True
+    )
+
+    def check_changes():
+        """Ativa o botão se o nome da cidade foi alterado."""
+        save_button.disabled = name_city_field.value.strip() == original_name.strip()
+        page.update()
+
+    def save_city():
+        city = City(idcity_field.value, name_city_field.value)
+        success = controller.update_city(
+            city) if idcity_field.value else controller.create_city(city)
 
         if success:
             show_snackbar("✅ Cidade salva com sucesso!", True)
             update_city_list()
+            close_modal()
         else:
             show_snackbar("❌ Erro ao salvar a cidade!", False)
 
+        page.update()
+
+    def open_modal(city=None):
+        nonlocal original_name  # Para modificar a variável dentro da função
+        if city:
+            idcity_field.value = str(city.idcity)
+            name_city_field.value = city.name_city
+        else:
+            idcity_field.value = ""
+            name_city_field.value = ""
+
+        original_name = name_city_field.value
+        save_button.disabled = True
+
+        modal.open = True
+        page.update()
+
+    def close_modal():
+        modal.open = False
+        page.update()
+
+    modal = ft.AlertDialog(
+        modal=True,
+        adaptive=True,
+        title=ft.Container(
+            content=ft.Column([
+                ft.Text("Cadastro de Cidade", size=18,
+                        weight=ft.FontWeight.BOLD),
+                ft.Container(height=3, bgcolor=ft.Colors.BLUE_700,
+                             border_radius=5)
+            ], spacing=5),
+            padding=10
+        ),
+        content=ft.Container(
+            content=ft.Column([idcity_field, name_city_field, save_button],
+                              horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            width=400,
+            height=200,
+            padding=20
+        ),
+        actions=[ft.TextButton("Fechar", on_click=lambda _: close_modal())],
+        shape=ft.RoundedRectangleBorder(radius=5)
+    )
+
+    def confirm_delete(city):
+        nonlocal selected_city
+        selected_city = city
+        confirm_delete_dialog.content = ft.Text(
+            f"Deseja realmente apagar a cidade '{city.name_city}'?")
+        confirm_delete_dialog.open = True
+        page.update()
+
+    def delete_confirmed(e):
+        nonlocal selected_city
+        if selected_city:
+            success = delete_city(selected_city.idcity)
+            confirm_delete_dialog.open = False
+            selected_city = None
+            if success:
+                update_city_list()
+            page.update()
+
+    def close_confirm_dialog(e):
+        confirm_delete_dialog.open = False
+        page.update()
+
+    confirm_delete_dialog = ft.AlertDialog(
+        modal=True,
+        title=ft.Container(content=ft.Text(
+            "Confirmação", size=18, weight=ft.FontWeight.BOLD), padding=10, border_radius=5,),
+        content=ft.Container(content=ft.Text(
+            "Deseja realmente apagar a cidade?"), padding=10, border_radius=5,),
+        actions=[
+            ft.TextButton("Cancelar", on_click=close_confirm_dialog),
+            ft.TextButton("Apagar", on_click=delete_confirmed, style=ft.ButtonStyle(
+                bgcolor=ft.Colors.RED, color=ft.Colors.WHITE))
+        ],
+        shape=ft.RoundedRectangleBorder(radius=5)
+    )
+
+
+    def delete_city(idcity):
+        return controller.delete_city(idcity)
+
+        try:
+            cursor.execute("DELETE FROM city WHERE idcity = %s", (idcity,))
+            conn.commit()
+            return True
+        except mysql.connector.Error as err:
+            print(f"Erro ao deletar cidade: {err}")
+            conn.rollback()
+            return False
+        finally:
+            cursor.close()
+            conn.close()
+
     def update_city_list():
         cities = controller.get_all_cities()
-        city_table.rows = []
-        for city in cities:
-            text_field = ft.TextField(value=city.name_city, on_submit=lambda e,
-                                      idcity=city.idcity, field=city.name_city: save_city(idcity, e.control))
-            city_table.rows.append(
-                ft.DataRow(
-                    cells=[
-                        ft.DataCell(ft.Text(str(city.idcity))),
-                        ft.DataCell(text_field),
-                        ft.DataCell(
-                            ft.Row([
-                                ft.IconButton(
-                                    icon=ft.icons.SAVE,
-                                    on_click=lambda e, idcity=city.idcity, field=text_field: save_city(
-                                        idcity, field)
-                                ),
-                                ft.IconButton(
-                                    icon=ft.icons.DELETE,
-                                    on_click=lambda e, idcity=city.idcity: delete_city(
-                                        idcity)
-                                ),
-                            ])
-                        ),
-                    ]
-                )
-            )
-        city_table.update()
-
-    def filter_cities(query):
-        update_city_list()
         city_table.rows = [
-            row for row in city_table.rows
-            if query.lower() in row.cells[1].content.value.lower()
+            ft.DataRow(
+                cells=[
+                    ft.DataCell(ft.Text(str(city.idcity))),
+                    ft.DataCell(ft.Text(city.name_city)),
+                    ft.DataCell(ft.Row([
+                        ft.IconButton(
+                            ft.icons.EDIT, on_click=lambda e, c=city: open_modal(c)),
+                        ft.IconButton(
+                            ft.icons.DELETE, on_click=lambda e, c=city: confirm_delete(c))
+                    ]))
+                ]
+            ) for city in cities
         ]
         page.update()
 
     def show_snackbar(msg, success):
         page.snack_bar = ft.SnackBar(
-            ft.Text(msg), bgcolor=ft.Colors.GREEN if success else ft.Colors.RED)
+            ft.Text(msg), bgcolor=ft.Colors.GREEN if success else ft.Colors.RED
+        )
         page.snack_bar.open = True
         page.update()
 
-    def delete_city(idcity):
-        success = controller.delete_city(idcity)  # Remove do banco de dados
-        if success:
-            show_snackbar("✅ Cidade excluída com sucesso!", True)
-            update_city_list()  # Atualiza a lista de cidades
-        else:
-            show_snackbar("❌ Erro ao excluir a cidade!", False)
+    update_city_list()
 
-    # 🏗️ Layout principal
     return ft.Column([
         search_field,
         ft.ElevatedButton(
             "Nova Cidade", on_click=lambda _: open_modal(), icon=ft.icons.ADD),
-        city_table
-    ], spacing=20)
+        city_table,
+        confirm_delete_dialog,
+        modal
+    ], expand=True, spacing=20)
