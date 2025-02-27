@@ -2,7 +2,6 @@ import flet as ft
 from controllers.cityController import CityController
 from models.city import City
 
-
 def cityScreen(page: ft.Page):
     page.title = "Cadastro de Cidades"
 
@@ -25,12 +24,8 @@ def cityScreen(page: ft.Page):
         page.update()
 
     search_field = ft.TextField(
-        label="Buscar cidade...",
-        on_change=lambda e: filter_cities(e.control.value),
-        border_radius=10,
-        bgcolor=ft.Colors.GREY_100,
-        prefix_icon=ft.icons.SEARCH,
-        text_align=ft.TextAlign.LEFT,
+        label="Buscar cidade...", on_change=lambda e: filter_cities(e.control.value),
+        border_radius=10, bgcolor=ft.Colors.GREY_100, prefix_icon=ft.icons.SEARCH, text_align=ft.TextAlign.LEFT,
     )
 
     idcity_field = ft.TextField(label="ID da Cidade", disabled=True)
@@ -39,12 +34,10 @@ def cityScreen(page: ft.Page):
     )
 
     original_name = ""
-    save_button = ft.ElevatedButton(
-        "Salvar",
-        on_click=lambda e: save_city(),
-        style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE_700,
-                             color=ft.Colors.WHITE),
-        disabled=True
+    save_button = ft.ElevatedButton("Salvar", on_click=lambda e: save_city(),
+                                    style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE_700,
+                                    color=ft.Colors.WHITE),
+                                    disabled=True
     )
 
     def check_changes():
