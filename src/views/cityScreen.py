@@ -89,7 +89,7 @@ def cityScreen(page: ft.Page):
         modal=True,
         adaptive=True,
         title=ft.Container(
-            content=ft.Column([
+            content=ft.Column([ 
                 ft.Text("Cadastro de Cidade", size=18,
                         weight=ft.FontWeight.BOLD),
                 ft.Container(height=3, bgcolor=ft.Colors.BLUE_700,
@@ -133,9 +133,9 @@ def cityScreen(page: ft.Page):
     confirm_delete_dialog = ft.AlertDialog(
         modal=True,
         title=ft.Container(content=ft.Text(
-            "Confirmação", size=18, weight=ft.FontWeight.BOLD), padding=10, border_radius=5,),
+            "Confirmação", size=18, weight=ft.FontWeight.BOLD), padding=10, border_radius=5, ),
         content=ft.Container(content=ft.Text(
-            "Deseja realmente apagar a cidade?"), padding=10, border_radius=5,),
+            "Deseja realmente apagar a cidade?"), padding=10, border_radius=5, ),
         actions=[
             ft.TextButton("Cancelar", on_click=close_confirm_dialog),
             ft.TextButton("Apagar", on_click=delete_confirmed, style=ft.ButtonStyle(
@@ -144,38 +144,28 @@ def cityScreen(page: ft.Page):
         shape=ft.RoundedRectangleBorder(radius=5)
     )
 
-
     def delete_city(idcity):
         return controller.delete_city(idcity)
 
-        try:
-            cursor.execute("DELETE FROM city WHERE idcity = %s", (idcity,))
-            conn.commit()
-            return True
-        except mysql.connector.Error as err:
-            print(f"Erro ao deletar cidade: {err}")
-            conn.rollback()
-            return False
-        finally:
-            cursor.close()
-            conn.close()
-
     def update_city_list():
         cities = controller.get_all_cities()
-        city_table.rows = [
-            ft.DataRow(
+
+        city_table.rows.clear()  # Limpa as linhas anteriores
+
+        # Adiciona as novas linhas corretamente
+        for city in cities:
+            row = ft.DataRow(
                 cells=[
                     ft.DataCell(ft.Text(str(city.idcity), color=ft.Colors.BLACK)),
                     ft.DataCell(ft.Text(city.name_city, color=ft.Colors.BLACK)),
                     ft.DataCell(ft.Row([
-                        ft.IconButton(
-                            ft.icons.EDIT, on_click=lambda e, c=city: open_modal(c)),
-                        ft.IconButton(
-                            ft.icons.DELETE, on_click=lambda e, c=city: confirm_delete(c))
+                        ft.IconButton(ft.icons.EDIT, on_click=lambda e, c=city: open_modal(c)),
+                        ft.IconButton(ft.icons.DELETE, on_click=lambda e, c=city: confirm_delete(c))
                     ]))
                 ]
-            ) for city in cities
-        ]
+            )
+            city_table.rows.append(row)
+
         page.update()
 
     def show_snackbar(msg, success):
@@ -187,11 +177,19 @@ def cityScreen(page: ft.Page):
 
     update_city_list()
 
+    # Contêiner para permitir scroll na tabela
+    # Substituindo o uso de scroll no Container para usar ft.Scroll
+    city_table_container = ft.Column(
+        controls=[city_table],
+        height=400,  # Define a altura máxima da tabela
+        width=600,   # Ajuste a largura conforme necessário
+        scroll=ft.ScrollMode.AUTO  # Habilita o scroll automático
+)
+
     return ft.Column([
         search_field,
-        ft.ElevatedButton(
-            "Nova Cidade", on_click=lambda _: open_modal(), icon=ft.icons.ADD),
-        city_table,
+        ft.ElevatedButton("Nova Cidade", on_click=lambda _: open_modal(), icon=ft.icons.ADD),
+        city_table_container,  # Substitua city_table por city_table_container
         confirm_delete_dialog,
         modal
     ], expand=True, spacing=20)
