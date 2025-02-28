@@ -8,8 +8,8 @@ from models.cashflow import Cashflow
 def customerScreen(page: ft.Page):
     page.title = "Cadastro de Clientes"
 
-    controller = CustomerController()
-    cashflow_controller = CashflowController()
+    controller = customerController()
+    cashflow_controller = cashflowController()
     selected_customer = None
 
     # Tabela de Clientes

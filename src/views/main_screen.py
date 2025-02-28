@@ -37,9 +37,7 @@ def main_screen(page: ft.Page):
             handle_logout(e)
         elif selected_option == "City":
             content_container.content = cityScreen(page)  # Exibe a tela de cidades
-        elif selected_option == "Exchange":
-            content_container.content = customerScreen(
-                page)  # Exibe a tela de cidades
+        elif selected_option == "Exchange": content_container.content = customerScreen(page)  # Exibe a tela de cidades
         else:
             content_container.content = ft.Text(
                 f"Você selecionou: {selected_option}", size=20)
