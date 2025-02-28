@@ -1,0 +1,18 @@
+A tela principal será uma lista da tabela customer. 
+Terá vínculo com o model model.customer
+Criar uma tela no mesmo padrão da tela de cityScreen.
+neste tela deverá constar os campos name, phone, andress, fk_idcity(vinculada a tabela city), email, dtbirth, picture_path
+
+- Esta lista terá um ícone para lançamentos do cheque do customer
+  Terá vínculo com o model modelcashflow
+  Ao clicar no botão de lançamento do cheque abrirá um modal para lançar os campos: dtcashflow, tchaflow, fk_idbankmaster(vinculado a tabela bank), valueflow, centsflow,         percentflow, valuepercentflow, subtotalflow, cents2flow, wire, totalflow, totaltopay, cashflowok
+
+
+A tela de lançamento de cheques precisa ter os campos do model Cashflow:   fk_idcustomer, fk_idcompany, dtcashflow, tchaflow, fk_idbankmaster, valueflow, valuewire, centsflow, cents2flow, percentflow, valuepercentflow, totalflow, totaltopay, cashflowok, cashflowobs, wire, subtotalflow, description, fk_idstatus, fk_idstore
+
+
+
+
+
+
+

@@ -172,17 +172,21 @@ def cityScreen(page: ft.Page):
 
     # Contêiner para permitir scroll na tabela
     # Substituindo o uso de scroll no Container para usar ft.Scroll
-    city_table_container = ft.Column(
-        controls=[city_table],
-        height=400,  # Define a altura máxima da tabela
-        width=600,   # Ajuste a largura conforme necessário
-        scroll=ft.ScrollMode.AUTO  # Habilita o scroll automático
-)
+    city_table_container = ft.Container(
+        content=ft.Column(
+            controls=[city_table],
+            expand=True,  # Expande para ocupar o espaço disponível
+            scroll=ft.ScrollMode.AUTO  # Habilita o scroll
+        ),
+        expand=True  # Faz o container ocupar o espaço restante abaixo do navbar
+    )
+
 
     return ft.Column([
         search_field,
-        ft.ElevatedButton("Nova Cidade", on_click=lambda _: open_modal(), icon=ft.icons.ADD),
-        city_table_container,  # Substitua city_table por city_table_container
+        ft.ElevatedButton(
+            "Nova Cidade", on_click=lambda _: open_modal(), icon=ft.icons.ADD),
+        city_table_container,  # Mantém o container da tabela com altura dinâmica
         confirm_delete_dialog,
         modal
     ], expand=True, spacing=20)

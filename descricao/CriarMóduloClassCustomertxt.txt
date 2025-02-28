@@ -1,0 +1,537 @@
+Vou passar o código que inicia como Bank.js e seus códigos complementares do frontend bankService.js e também seus códigos complementares do backend: bankRoutes.js, bankModels.js, bankController.js, bankRoutes.js e bankStyle.css
+Preciso que estes códigos sejam reproduzidos para um novo conjunto que iniciará com Class.js. A tabela para o novo classModel.js será classcustomer e os campos serão idclasscustomer, description e seeincompany . O arquivo css deve se chamar classStyle.css. Criar os arquivos: Class.js, classService.js, classRoutes.js, classModels.js, classController.js, classRoutes.js. 
+
+
+---------Bank.js.-----------------------------------------------------------
+import React, { Component } from 'react';
+import bankService from '../services/bankService';
+import "../styles/bankStyle.css";
+import { FaEdit, FaTrashAlt } from 'react-icons/fa';
+
+class Bank extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            formData: { id: '', name: '' },
+            notification: { message: '', type: '', showButtons: false, onConfirm: null },
+            banks: []
+        };
+    }
+
+    componentDidMount() {
+        this.fetchBanks();
+    }
+
+    componentWillUnmount() {
+        this.clearNotificationTimeout();
+    }
+
+    clearNotificationTimeout = () => {
+        if (this.notificationTimeout) {
+            clearTimeout(this.notificationTimeout);
+        }
+    };
+
+    showNotification = (message, type, showButtons = false, onConfirm = null) => {
+        this.clearNotificationTimeout();
+        this.setState({ notification: { message, type, showButtons, onConfirm } });
+
+        if (!showButtons) {
+            this.notificationTimeout = setTimeout(() => {
+                this.setState({ notification: { message: '', type: '', showButtons: false, onConfirm: null } });
+            }, 3000); // A notificação desaparecerá após 3 segundos
+        }
+    };
+
+    handleConfirm = () => {
+        const { onConfirm } = this.state.notification;
+        if (onConfirm) onConfirm();
+        this.setState({ notification: { message: '', type: '', showButtons: false, onConfirm: null } });
+    };
+
+    handleCancel = () => {
+        this.setState({ notification: { message: '', type: '', showButtons: false, onConfirm: null } });
+    };
+
+    fetchBanks = async () => {
+        try {
+            const banks = await bankService.getBanks();
+            this.setState({ banks });
+        } catch (error) {
+            this.showNotification('Falha ao buscar bancos: ' + error.message, 'error');
+        }
+    };
+
+    handleChange = (e) => {
+        const { name, value } = e.target;
+        this.setState({
+            formData: { ...this.state.formData, [name]: value }
+        });
+    };
+
+    handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (this.state.formData.id) {
+                await bankService.updateBank(this.state.formData.id, this.state.formData);
+                this.showNotification('Banco atualizado com sucesso!', 'success');
+            } else {
+                await bankService.addBank(this.state.formData);
+                this.showNotification('Banco adicionado com sucesso!', 'success');
+            }
+            this.fetchBanks();
+            this.setState({ formData: { id: '', name: '' } });
+        } catch (error) {
+            this.showNotification('Erro: ' + error.message, 'error');
+        }
+    };
+
+    handleDelete = async (id, name) => {
+        this.showNotification(
+            `Tem certeza que deseja excluir o banco "${name}"?`,
+            'warning',
+            true,
+            async () => {
+                try {
+                    await bankService.deleteBank(id);
+                    this.showNotification('Banco excluído com sucesso!', 'success');
+                    this.fetchBanks();
+                } catch (error) {
+                    this.showNotification('Erro: ' + error.message, 'error');
+                }
+            }
+        );
+    };
+
+    render() {
+        const { formData, notification, banks } = this.state;
+        return (
+            <div className="bank-container">
+                {notification.message && (
+                    <div className={`notification ${notification.type}`}>
+                        {notification.message}
+                        {notification.showButtons && (
+                            <div className="notification-buttons">
+                                <button onClick={this.handleConfirm} className="btn-confirm">Sim</button>
+                                <button onClick={this.handleCancel} className="btn-cancel">Não</button>
+                            </div>
+                        )}
+                    </div>
+                )}
+                <h2 className="title">Banks</h2>
+                <form onSubmit={this.handleSubmit} className="bank-form">
+                    <div className="form-inline">
+                        <label htmlFor="bankName">Banco: </label>
+                        <input
+                            type="text"
+                            id="bankName"
+                            name="name"
+                            placeholder="Digite o nome do banco"
+                            value={formData.name}
+                            onChange={this.handleChange}
+                            required
+                        />
+                        <button type="submit" className="btn-submit">
+                            {formData.id ? 'Atualizar' : 'Adicionar'}
+                        </button>
+                    </div>
+                </form>
+
+                <div className="bank-grid">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {banks.length > 0 ? (
+                                banks.map(bank => (
+                                    <tr key={bank.idbank}>
+                                        <td>{bank.idbank}</td>
+                                        <td>{bank.namebank}</td>
+                                        <td>
+                                            <FaEdit 
+                                                className="action-icon" 
+                                                onClick={() => this.setState({ formData: { id: bank.idbank, name: bank.namebank } })} 
+                                                title="Editar" 
+                                            />
+                                            <FaTrashAlt 
+                                                className="action-icon" 
+                                                onClick={() => this.handleDelete(bank.idbank, bank.namebank)} 
+                                                title="Excluir" 
+                                            />
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="3">Nenhum banco encontrado.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    }
+}
+
+export default Bank;
+
+---------bankService.js.----------------------------------------------------
+import axios from 'axios';
+
+const API_URL = 'http://localhost:3001/api/banks';
+
+// const getBanks = async () => {
+//     // alert('entrei o bankService/getBanks')
+//     const response = await axios.get(API_URL);
+//     alert("bankService: ")
+//     return response.data.data; // Ajuste para acessar os dados corretamente
+// };
+
+const getBanks = async () => {
+  try {
+    const response = await axios.get(API_URL);
+    // alert("Resposta da API:", response.data.data); // Verifique a estrutura aqui
+    return response.data.data; // Ajuste o caminho conforme a estrutura da resposta
+  } catch (error) {
+    console.error("Erro ao buscar bancos:", error);
+    throw error;
+  }
+};
+
+const addBank = async (bank) => {
+    const response = await axios.post(API_URL, { name: bank.name });
+    return response.data.id;
+};
+
+const updateBank = async (id, bank) => {
+    const response = await axios.put(`${API_URL}/${id}`, { name: bank.name });
+    return response.data.message;
+};
+
+const deleteBank = async (id) => {
+    const response = await axios.delete(`${API_URL}/${id}`);
+    return response.data.message;
+};
+
+export default {
+    getBanks,
+    addBank,
+    updateBank,
+    deleteBank
+};
+
+---------bankModels.js------------------------------------------------------
+import db from '../config/db.js'; // Certifique-se de que a extensão está correta
+
+const getAllBanks = async () => {
+  try {
+    const [rows] = await db.query('SELECT * FROM bank');
+    console.log('Resultado da consulta:', rows);
+    return rows;
+  } catch (err) {
+    console.error('Erro ao buscar bancos:', err);
+    throw err;
+  }
+};
+
+const getBankById = async (id) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM bank WHERE idbank = ?', [id]);
+    return rows[0];
+  } catch (err) {
+    console.error('Erro ao buscar banco por ID:', err);
+    throw err;
+  }
+};
+
+const addBank = async (name) => {
+  try {
+    const result = await db.query('INSERT INTO bank (namebank) VALUES (?)', [name]);
+    return result.insertId;
+  } catch (err) {
+    console.error('Erro ao adicionar banco:', err);
+    throw err;
+  }
+};
+
+const updateBank = async (id, name) => {
+  try {
+    const result = await db.query('UPDATE bank SET namebank = ? WHERE idbank = ?', [name, id]);
+    return result;
+  } catch (err) {
+    console.error('Erro ao atualizar banco:', err);
+    throw err;
+  }
+};
+
+const deleteBank = async (id) => {
+  try {
+    const result = await db.query('DELETE FROM bank WHERE idbank = ?', [id]);
+    return result;
+  } catch (err) {
+    console.error('Erro ao excluir banco:', err);
+    throw err;
+  }
+};
+
+// Exporta todas as funções como um objeto
+export default {
+  getAllBanks,
+  getBankById,
+  addBank,
+  updateBank,
+  deleteBank
+};
+
+---------bankController.js--------------------------------------------------
+import bankModel from '../models/bankModel.js'; // Certifique-se de que a exportação padrão está correta no model
+
+export const getAllBanks = async (req, res) => {
+  try {
+    const banks = await bankModel.getAllBanks();
+    res.json({ success: true, data: banks });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Erro ao buscar bancos' });
+  }
+};
+
+export const getBankById = async (req, res) => {
+  try {
+    const bank = await bankModel.getBankById(req.params.id);
+    if (bank) {
+      res.json(bank);
+    } else {
+      res.status(404).json({ message: 'Banco não encontrado' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao buscar banco' });
+  }
+};
+
+export const addBank = async (req, res) => {
+  try {
+    const id = await bankModel.addBank(req.body.name);
+    res.status(201).json({ message: 'Banco criado', id });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao criar banco' });
+  }
+};
+
+export const updateBank = async (req, res) => {
+  try {
+    await bankModel.updateBank(req.params.id, req.body.name);
+    res.json({ message: 'Banco atualizado' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao atualizar banco' });
+  }
+};
+
+export const deleteBank = async (req, res) => {
+  try {
+    await bankModel.deleteBank(req.params.id);
+    res.json({ message: 'Banco excluído' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao excluir banco' });
+  }
+};
+
+---------bankRoutes.js------------------------------------------------------
+import express from 'express';
+import { getAllBanks, getBankById, addBank, updateBank, deleteBank } from '../controllers/bankController.js';
+
+const router = express.Router();
+
+router.get('/', getAllBanks);
+router.get('/:id', getBankById);
+router.post('/', addBank);
+router.put('/:id', updateBank);
+router.delete('/:id', deleteBank);
+
+export default router;
+
+---------bankStyle.css------------------------------------------------------
+
+.bank-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    height: 90%;
+    overflow: hidden;
+    /* Oculta o overflow para evitar rolagem externa */
+    display: flex;
+    flex-direction: column
+    /* Ajusta a altura;*/
+}
+
+.title {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.notification {
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    color: #000000;
+    font-weight: bold;
+    text-align: center;}
+
+.notification.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.notification.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.bank-form {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    flex: 1;
+    margin-right: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.form-group input {
+    height: 40px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.btn-submit {
+    padding: 10px 20px;
+    background-color: #4350B3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.btn-submit:hover {
+    background-color: #4350B3;
+}
+
+.bank-grid {
+    flex: 1;
+    /* Permite que a grid ocupe o espaço restante disponível */
+    overflow-y: auto;
+    /* Permite rolar verticalmente se necessário */
+}
+
+.bank-grid table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.bank-grid th,
+.bank-grid td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+.bank-grid th {
+    background-color: #4350B3;
+    color: white;
+}
+
+.bank-grid tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.bank-grid tr:hover {
+    background-color: #ddd;
+}
+
+.btn-edit,
+.btn-delete {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-edit {
+    background-color: #ffc107;
+    color: white;
+    margin-right: 5px;
+}
+
+.btn-edit:hover {
+    background-color: #e0a800;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+.action-icon {
+    font-size: 20px;
+    cursor: pointer;
+    margin: 0 10px;
+    color: #4350B3;
+}
+
+.action-icon:hover {
+    color: #0056b3;
+}
+
+.notification.warning {
+    background-color: #f5eada;
+}
+
+.notification-buttons {
+    margin-top: 10px;
+}
+
+.btn-confirm,
+.btn-cancel {
+    padding: 10px 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn-confirm {
+    background-color: #4CAF50;
+    color: #fff;
+}
+
+.btn-cancel {
+    background-color: #f44336;
+    color: #fff;
+}
+

@@ -3,73 +3,83 @@ from services.database import conectar_bd, verificar_conexao
 
 
 class CityController:
-    def __init__(self):
-        self.conn = conectar_bd()
-        self.cursor = self.conn.cursor()
-
     def create_city(self, city: City):
         """Cria uma cidade garantindo que a conexão esteja ativa"""
         try:
-            # Verifica/Reestabelece conexão
-            self.conn = verificar_conexao(self.conn)
-            self.cursor = self.conn.cursor()  # Recria o cursor
-            
+            conn = verificar_conexao(conectar_bd())  # Nova conexão
+            cursor = conn.cursor()
+
             sql = "INSERT INTO city (name_city) VALUES (%s)"
-            self.cursor.execute(sql, (city.name_city,))
-            
-            self.conn.commit()
+            cursor.execute(sql, (city.name_city,))
+
+            conn.commit()
             return True
         except Exception as err:
             print(f"Erro: {err}")
-            self.conn.rollback()
+            conn.rollback()
             return False
+        finally:
+            cursor.close()
+            conn.close()
 
     def get_city(self, idcity: str) -> City | None:
         """Busca uma cidade pelo ID"""
-        self.conn = verificar_conexao(self.conn)
-        self.cursor = self.conn.cursor()
-        self.cursor.execute(
+        conn = verificar_conexao(conectar_bd())
+        cursor = conn.cursor()
+
+        cursor.execute(
             "SELECT idcity, name_city FROM city WHERE idcity = %s", (idcity,))
-        row = self.cursor.fetchone()
+        row = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
         return City(idcity=row[0], name_city=row[1]) if row else None
 
     def update_city(self, city: City) -> bool:
         """Atualiza os dados de uma cidade"""
         try:
-            self.conn = verificar_conexao(self.conn)
-            self.cursor = self.conn.cursor()
-            self.cursor.execute("UPDATE city SET name_city = %s WHERE idcity = %s",
-                                (city.name_city, city.idcity))
-            self.conn.commit()
-            return self.cursor.rowcount > 0
+            conn = verificar_conexao(conectar_bd())
+            cursor = conn.cursor()
+
+            cursor.execute("UPDATE city SET name_city = %s WHERE idcity = %s",
+                           (city.name_city, city.idcity))
+            conn.commit()
+            return cursor.rowcount > 0
         except Exception as e:
             print("Erro ao atualizar cidade:", e)
-            self.conn.rollback()
+            conn.rollback()
             return False
+        finally:
+            cursor.close()
+            conn.close()
 
     def delete_city(self, idcity: str) -> bool:
         """Deleta uma cidade pelo ID"""
         try:
-            self.conn = verificar_conexao(self.conn)
-            self.cursor = self.conn.cursor()
-            self.cursor.execute(
-                "DELETE FROM city WHERE idcity = %s", (idcity,))
-            self.conn.commit()
-            return self.cursor.rowcount > 0
+            conn = verificar_conexao(conectar_bd())
+            cursor = conn.cursor()
+
+            cursor.execute("DELETE FROM city WHERE idcity = %s", (idcity,))
+            conn.commit()
+            return cursor.rowcount > 0
         except Exception as e:
             print("Erro ao deletar cidade:", e)
-            self.conn.rollback()
+            conn.rollback()
             return False
+        finally:
+            cursor.close()
+            conn.close()
 
     def get_all_cities(self) -> list[City]:
         """Obtém todas as cidades"""
-        self.conn = verificar_conexao(self.conn)
-        self.cursor = self.conn.cursor()
-        self.cursor.execute("SELECT idcity, name_city FROM city")
-        rows = self.cursor.fetchall()
-        return [City(idcity=row[0], name_city=row[1]) for row in rows]
+        conn = verificar_conexao(conectar_bd())
+        cursor = conn.cursor()
 
-    # def close_connection(self):
-    #     """Fecha a conexão com o banco de dados"""
-    #     self.cursor.close()
-    #     self.conn.close()
+        cursor.execute("SELECT idcity, name_city FROM city")
+        rows = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return [City(idcity=row[0], name_city=row[1]) for row in rows]

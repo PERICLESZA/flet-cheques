@@ -1,4 +1,4 @@
-class Exchange:
+class Cashflow:
     def __init__(self, 
                 idcashflow, 
                 fk_idcompany, 

@@ -1,6 +1,7 @@
 import flet as ft
 import base64
 from views.cityScreen import cityScreen
+from views.customerScreen import customerScreen
 
 # Função para converter uma imagem para Base64
 
@@ -35,7 +36,9 @@ def main_screen(page: ft.Page):
         if selected_option == "Logout":
             handle_logout(e)
         elif selected_option == "City":
-            content_container.content = cityScreen(
+            content_container.content = cityScreen(page)  # Exibe a tela de cidades
+        elif selected_option == "Exchange":
+            content_container.content = customerScreen(
                 page)  # Exibe a tela de cidades
         else:
             content_container.content = ft.Text(
@@ -53,16 +56,11 @@ def main_screen(page: ft.Page):
                 ft.Text(usuario_nome, size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),  # Exibe o nome do usuário
                 ft.PopupMenuButton(
                     items=[
-                        ft.PopupMenuItem(
-                            text="Exchange", data="Exchange", on_click=menu_option_selected),
-                        ft.PopupMenuItem(text="City", data="City",
-                                         on_click=menu_option_selected),
-                        ft.PopupMenuItem(text="Bank", data="Bank",
-                                         on_click=menu_option_selected),
-                        ft.PopupMenuItem(
-                            text="Customer", data="Customer", on_click=menu_option_selected),
-                        ft.PopupMenuItem(
-                            text="Logout", data="Logout", on_click=menu_option_selected),
+                        ft.PopupMenuItem(text="Exchange", data="Exchange", on_click=menu_option_selected),
+                        ft.PopupMenuItem(text="City", data="City", on_click=menu_option_selected),
+                        ft.PopupMenuItem(text="Bank", data="Bank",  on_click=menu_option_selected),
+                        ft.PopupMenuItem(text="Customer", data="Customer", on_click=menu_option_selected),
+                        ft.PopupMenuItem(text="Logout", data="Logout", on_click=menu_option_selected),
                     ],
                     icon=ft.Icons.MENU,
                     style=ft.ButtonStyle(bgcolor=ft.Colors.WHITE,  # Cor de fundo branca
@@ -84,7 +82,6 @@ def main_screen(page: ft.Page):
         expand=True,  # Expande o container para ocupar todo o espaço
         bgcolor=ft.Colors.BLUE_50,  # Apenas para visualização
     )
-
 
 #    content_container = ft.Container(
         # content=ft.Column(

@@ -1,0 +1,458 @@
+Vou passar o código que inicia como CadLogin.js e seus códigos complementares do frontend CadLoginService.js e também seus códigos complementares do backend: CadLoginRoutes.js, CadLoginModels.js, CadLoginController.js, CadLoginRoutes.js e CadLoginStyle.css
+
+Preciso que estes códigos sejam reproduzidos para um novo conjunto que iniciará com Country.js. A tabela para o novo customerModel.js será customer e os campos serão idcustomer, fk_idcity, fk_ididentification, fk_idcustomer, fk_idclasscustomer, fk_idcountry, typecustomer, name, andress, phone, phone2, zipcode, state, email, dtbirth, numidentification, comissionpercent, attention, picture_path, active, restriction. O arquivo css deve se chamar customerStyle.css. Criar os arquivos: Customer.js, customerService.js, customerRoutes.js, customerModels.js, customerController.js, customerRoutes.js. 
+
+
+---------LoginCad.js.-----------------------------------------------------------
+import React, { Component } from 'react';
+import loginService from '../services/loginService'; // Adaptar o nome do serviço também
+import "../styles/loginStyle.css"; // Adaptar o nome da folha de estilo
+import { FaEdit, FaTrashAlt } from 'react-icons/fa';
+
+class LoginCad extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            formData: { id: '', name: '' },
+            notification: { message: '', type: '', showButtons: false, onConfirm: null },
+            logins: []
+        };
+    }
+
+    componentDidMount() {
+        this.fetchLogins();
+    }
+
+    componentWillUnmount() {
+        this.clearNotificationTimeout();
+    }
+
+    clearNotificationTimeout = () => {
+        if (this.notificationTimeout) {
+            clearTimeout(this.notificationTimeout);
+        }
+    };
+
+    showNotification = (message, type, showButtons = false, onConfirm = null) => {
+        this.clearNotificationTimeout();
+        this.setState({ notification: { message, type, showButtons, onConfirm } });
+
+        if (!showButtons) {
+            this.notificationTimeout = setTimeout(() => {
+                this.setState({ notification: { message: '', type: '', showButtons: false, onConfirm: null } });
+            }, 3000); // A notificação desaparecerá após 3 segundos
+        }
+    };
+
+    handleConfirm = () => {
+        const { onConfirm } = this.state.notification;
+        if (onConfirm) onConfirm();
+        this.setState({ notification: { message: '', type: '', showButtons: false, onConfirm: null } });
+    };
+
+    handleCancel = () => {
+        this.setState({ notification: { message: '', type: '', showButtons: false, onConfirm: null } });
+    };
+
+    fetchLogins = async () => {
+        try {
+            const logins = await loginService.getLogins(); // Adaptar o método no serviço
+            this.setState({ logins });
+        } catch (error) {
+            this.showNotification('Falha ao buscar logins: ' + error.message, 'error');
+        }
+    };
+
+    handleChange = (e) => {
+        const { name, value } = e.target;
+        this.setState({
+            formData: { ...this.state.formData, [name]: value }
+        });
+    };
+
+    handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (this.state.formData.id) {
+                await loginService.updateLogin(this.state.formData.id, this.state.formData); // Adaptar o método no serviço
+                this.showNotification('Login atualizado com sucesso!', 'success');
+            } else {
+                await loginService.addLogin(this.state.formData); // Adaptar o método no serviço
+                this.showNotification('Login adicionado com sucesso!', 'success');
+            }
+            this.fetchLogins();
+            this.setState({ formData: { id: '', name: '' } });
+        } catch (error) {
+            this.showNotification('Erro: ' + error.message, 'error');
+        }
+    };
+
+    handleDelete = async (id, name) => {
+        this.showNotification(
+            `Tem certeza que deseja excluir o login "${name}"?`,
+            'warning',
+            true,
+            async () => {
+                try {
+                    await loginService.deleteLogin(id); // Adaptar o método no serviço
+                    this.showNotification('Login excluído com sucesso!', 'success');
+                    this.fetchLogins();
+                } catch (error) {
+                    this.showNotification('Erro: ' + error.message, 'error');
+                }
+            }
+        );
+    };
+
+    render() {
+        const { formData, notification, logins } = this.state;
+        return (
+            <div className="login-container">
+                {notification.message && (
+                    <div className={`notification ${notification.type}`}>
+                        {notification.message}
+                        {notification.showButtons && (
+                            <div className="notification-buttons">
+                                <button onClick={this.handleConfirm} className="btn-confirm">Sim</button>
+                                <button onClick={this.handleCancel} className="btn-cancel">Não</button>
+                            </div>
+                        )}
+                    </div>
+                )}
+                <h2 className="title">Logins</h2>
+                <form onSubmit={this.handleSubmit} className="login-form">
+                    <div className="form-inline">
+                        <label htmlFor="loginName">Login: </label>
+                        <input
+                            type="text"
+                            id="loginName"
+                            name="name"
+                            placeholder="Digite o nome do login"
+                            value={formData.name}
+                            onChange={this.handleChange}
+                            required
+                        />
+                        <button type="submit" className="btn-submit">
+                            {formData.id ? 'Atualizar' : 'Adicionar'}
+                        </button>
+                    </div>
+                </form>
+
+                <div className="login-grid">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {logins.length > 0 ? (
+                                logins.map(login => (
+                                    <tr key={login.idlogin}>
+                                        <td>{login.idlogin}</td>
+                                        <td>{login.namelogin}</td>
+                                        <td>
+                                            <FaEdit 
+                                                className="action-icon" 
+                                                onClick={() => this.setState({ formData: { id: login.idlogin, name: login.namelogin } })} 
+                                                title="Editar" 
+                                            />
+                                            <FaTrashAlt 
+                                                className="action-icon" 
+                                                onClick={() => this.handleDelete(login.idlogin, login.namelogin)} 
+                                                title="Excluir" 
+                                            />
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="3">Nenhum login encontrado.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    }
+}
+
+export default LoginCad;
+
+---------CadLoginService.js.----------------------------------------------------
+import axios from 'axios';
+
+const API_URL = 'http://localhost:3001/api/logins';
+
+const getLogins = async () => {
+    try {
+        const response = await axios.get(API_URL);
+        return response.data.data;
+    } catch (error) {
+        console.error("Erro ao buscar logins:", error);
+        throw error;
+    }
+};
+
+const addLogin = async (login) => {
+    const response = await axios.post(API_URL, login);
+    return response.data.id;
+};
+
+const updateLogin = async (id, login) => {
+    const response = await axios.put(`${API_URL}/${id}`, login);
+    return response.data.message;
+};
+
+const deleteLogin = async (id) => {
+    const response = await axios.delete(`${API_URL}/${id}`);
+    return response.data.message;
+};
+
+export default {
+    getLogins,
+    addLogin,
+    updateLogin,
+    deleteLogin
+};
+
+---------CadLoginModels.js------------------------------------------------------
+import db from '../config/db.js'; 
+
+const getAllLogins = async () => {
+    const [rows] = await db.query('SELECT * FROM login');
+    return rows;
+};
+
+const getLoginById = async (id) => {
+    const [rows] = await db.query('SELECT * FROM login WHERE idlogin = ?', [id]);
+    return rows[0];
+};
+
+const addLogin = async (loginData) => {
+    const { active, email, login, nome, perfil, senha } = loginData;
+    const result = await db.query('INSERT INTO login (active, email, login, nome, perfil, senha) VALUES (?, ?, ?, ?, ?, ?)', 
+        [active, email, login, nome, perfil, senha]);
+    return result[0].insertId;
+};
+
+const updateLogin = async (id, loginData) => {
+    const { active, email, login, nome, perfil, senha } = loginData;
+    const result = await db.query('UPDATE login SET active = ?, email = ?, login = ?, nome = ?, perfil = ?, senha = ? WHERE idlogin = ?', 
+        [active, email, login, nome, perfil, senha, id]);
+    return result[0].affectedRows;
+};
+
+const deleteLogin = async (id) => {
+    const result = await db.query('DELETE FROM login WHERE idlogin = ?', [id]);
+    return result[0].affectedRows;
+};
+
+export default {
+    getAllLogins,
+    getLoginById,
+    addLogin,
+    updateLogin,
+    deleteLogin
+};
+
+---------CadLoginController.js--------------------------------------------------
+import cadLoginModel from '../models/cadLoginModels.js';
+
+export const getAllLogins = async (req, res) => {
+    try {
+        const logins = await cadLoginModel.getAllLogins();
+        res.json({ success: true, data: logins });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Erro ao buscar logins' });
+    }
+};
+
+export const getLoginById = async (req, res) => {
+    try {
+        const login = await cadLoginModel.getLoginById(req.params.id);
+        if (login) {
+            res.json({ success: true, data: login });
+        } else {
+            res.status(404).json({ success: false, message: 'Login não encontrado' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Erro ao buscar login' });
+    }
+};
+
+export const addLogin = async (req, res) => {
+    try {
+        const id = await cadLoginModel.addLogin(req.body);
+        res.json({ success: true, id });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Erro ao adicionar login' });
+    }
+};
+
+export const updateLogin = async (req, res) => {
+    try {
+        const affectedRows = await cadLoginModel.updateLogin(req.params.id, req.body);
+        if (affectedRows > 0) {
+            res.json({ success: true, message: 'Login atualizado com sucesso' });
+        } else {
+            res.status(404).json({ success: false, message: 'Login não encontrado' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Erro ao atualizar login' });
+    }
+};
+
+export const deleteLogin = async (req, res) => {
+    try {
+        const affectedRows = await cadLoginModel.deleteLogin(req.params.id);
+        if (affectedRows > 0) {
+            res.json({ success: true, message: 'Login excluído com sucesso' });
+        } else {
+            res.status(404).json({ success: false, message: 'Login não encontrado' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Erro ao excluir login' });
+    }
+};
+
+---------CadLoginRoutes.js------------------------------------------------------
+import express from 'express';
+import { getAllLogins, getLoginById, addLogin, updateLogin, deleteLogin } from '../controllers/cadLoginController.js';
+
+const router = express.Router();
+
+router.get('/logins', getAllLogins);
+router.get('/logins/:id', getLoginById);
+router.post('/logins', addLogin);
+router.put('/logins/:id', updateLogin);
+router.delete('/logins/:id', deleteLogin);
+
+export default router;
+
+---------CadLoginStyle.css------------------------------------------------------
+.login-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    height: 90%;
+    overflow: hidden;
+    /* Oculta o overflow para evitar rolagem externa */
+    display: flex;
+    flex-direction: column
+        /* Ajusta a altura;*/
+}
+
+.login-grid {
+    flex: 1;
+    /* Permite que a grid ocupe o espaço restante disponível */
+    overflow-y: auto;
+    /* Permite rolar verticalmente se necessário */
+}
+
+.login-grid {
+    flex: 1;
+    /* Permite que a grid ocupe o espaço restante disponível */
+    overflow-y: auto;
+    /* Permite rolar verticalmente se necessário */
+}
+
+.login-grid table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.login-grid th,
+.login-grid td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+.login-grid th {
+    background-color: #4350B3;
+    color: white;
+}
+
+.login-grid tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.login-grid tr:hover {
+    background-color: #ddd;
+}
+
+.login-form {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.form-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.form-inline .form-group {
+    position: relative;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.form-inline input[type="text"],
+.form-inline input[type="email"],
+.form-inline input[type="password"] {
+    padding: 1px 8px;  /* 0.5rem; */
+    /* Diminui o padding para reduzir a altura */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    outline: none;
+    font-size: 0.9rem;
+    /* Reduz um pouco o tamanho da fonte para ajustar à nova altura */
+}
+
+.form-inline input:focus,
+.form-inline input:not(:placeholder-shown) {
+    border-color: #4350B3;
+}
+
+.form-inline label {
+    position: absolute;
+    top: 50%;
+    left: 0.5rem;
+    transform: translateY(-50%);
+    background: white;
+    padding: 0 0.25rem;
+    color: #999;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.form-inline input:focus+label,
+.form-inline input:not(:placeholder-shown)+label {
+    top: 0;
+    left: 0.5rem;
+    font-size: 0.7rem;
+    color: #4350B3;
+}
+
+.btn-submit {
+    background-color: #4350B3;
+    color: white;
+    border: none;
+    padding: 6px 12px;/* 0.5rem 1rem;*/
+    /* Ajusta o padding do botão para combinar com a nova altura dos inputs */
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 0rem;
+    align-self: flex-start;
+}

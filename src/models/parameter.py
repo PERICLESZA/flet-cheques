@@ -1,4 +1,4 @@
-class City:
+class Parameter:
     def __init__(self, 
                  id_parameter, 
                  client,
